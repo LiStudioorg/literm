@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LiTerm</string>
+
+    <string name="nav_hosts">主机</string>
+    <string name="nav_keychain">密钥</string>
+    <string name="nav_snippets">代码片段</string>
+    <string name="nav_logs">日志</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_local_linux">本地 Linux</string>
+
+    <string name="hosts_title">主机</string>
+    <string name="hosts_subtitle">管理和连接你的服务器</string>
+    <string name="hosts_search_hint">搜索主机、用户名或标签</string>
+    <string name="hosts_add">添加主机</string>
+    <string name="hosts_all">全部主机</string>
+    <string name="hosts_search_results">搜索结果</string>
+    <string name="hosts_empty_title">未找到主机</string>
+    <string name="hosts_empty_hint">换个关键词，或清空搜索条件。</string>
+    <string name="search_clear">清除搜索</string>
+    <string name="host_status_online">在线</string>
+    <string name="host_status_offline">离线</string>
+    <plurals name="host_count">
+        <item quantity="one">%1$d 台设备</item>
+        <item quantity="other">%1$d 台设备</item>
+    </plurals>
+
+    <string name="local_linux_title">本地 Linux</string>
+    <string name="local_linux_subtitle">在设备上运行轻量级 Linux 环境</string>
+    <string name="local_linux_banner_title">随时可以开始</string>
+    <string name="local_linux_banner_message">安装环境后即可启动本地终端，无需远程连接。</string>
+    <string name="local_linux_environments">可用环境</string>
+    <string name="local_linux_installed_count">已安装 %1$d / %2$d</string>
+    <string name="local_linux_install">安装</string>
+    <string name="local_linux_start">启动</string>
+    <string name="local_linux_installed">已安装</string>
+    <string name="distro_alpine_desc">体积小、速度快，适合轻量容器和嵌入式任务。</string>
+    <string name="distro_alpine_size">约 8 MB</string>
+    <string name="distro_ubuntu_desc">生态成熟，对开发工具和软件包有广泛支持。</string>
+    <string name="distro_ubuntu_size">约 320 MB</string>
+    <string name="distro_debian_desc">稳定可靠，拥有大量开源软件包。</string>
+    <string name="distro_debian_size">约 280 MB</string>
+    <string name="distro_arch_desc">滚动更新，软件保持最新，适合进阶用户。</string>
+    <string name="distro_arch_size">约 260 MB</string>
+    <string name="distro_kali_desc">面向渗透测试与安全审计的工具集合。</string>
+    <string name="distro_kali_size">约 780 MB</string>
+
+    <string name="coming_soon">Coming Soon</string>
+    <string name="coming_soon_message">「%1$s」功能正在开发中。</string>
+</resources>

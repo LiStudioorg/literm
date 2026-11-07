@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LiTerm</string>
+
+    <string name="nav_hosts">Hosts</string>
+    <string name="nav_keychain">Keychain</string>
+    <string name="nav_snippets">Snippets</string>
+    <string name="nav_logs">Logs</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_local_linux">Local Linux</string>
+
+    <string name="hosts_title">Hosts</string>
+    <string name="hosts_subtitle">Manage and connect to your servers</string>
+    <string name="hosts_search_hint">Search hosts, users or tags</string>
+    <string name="hosts_add">Add host</string>
+    <string name="hosts_all">All hosts</string>
+    <string name="hosts_search_results">Search results</string>
+    <string name="hosts_empty_title">No hosts found</string>
+    <string name="hosts_empty_hint">Try a different keyword or clear the search.</string>
+    <string name="search_clear">Clear search</string>
+    <string name="host_status_online">Online</string>
+    <string name="host_status_offline">Offline</string>
+    <plurals name="host_count">
+        <item quantity="one">%1$d host</item>
+        <item quantity="other">%1$d hosts</item>
+    </plurals>
+
+    <string name="local_linux_title">Local Linux</string>
+    <string name="local_linux_subtitle">Run a lightweight Linux environment on this device</string>
+    <string name="local_linux_banner_title">Ready when you are</string>
+    <string name="local_linux_banner_message">Install an environment and start a local terminal without a remote connection.</string>
+    <string name="local_linux_environments">Environments</string>
+    <string name="local_linux_installed_count">%1$d of %2$d installed</string>
+    <string name="local_linux_install">Install</string>
+    <string name="local_linux_start">Start</string>
+    <string name="local_linux_installed">Installed</string>
+    <string name="distro_alpine_desc">Tiny and fast, ideal for lightweight containers and embedded tasks.</string>
+    <string name="distro_alpine_size">~8 MB</string>
+    <string name="distro_ubuntu_desc">A mature ecosystem with broad support for development tools.</string>
+    <string name="distro_ubuntu_size">~320 MB</string>
+    <string name="distro_debian_desc">Stable and dependable, with a huge collection of open-source packages.</string>
+    <string name="distro_debian_size">~280 MB</string>
+    <string name="distro_arch_desc">Rolling releases with the latest software for advanced users.</string>
+    <string name="distro_arch_size">~260 MB</string>
+    <string name="distro_kali_desc">A security toolkit for penetration testing and security audits.</string>
+    <string name="distro_kali_size">~780 MB</string>
+
+    <string name="coming_soon">Coming Soon</string>
+    <string name="coming_soon_message">%1$s is under development.</string>
+</resources>

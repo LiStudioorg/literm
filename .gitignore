@@ -1,0 +1,41 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local configuration
+local.properties
+
+# Generated IntelliJ / Android Studio files
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android build outputs
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output-metadata.json
+
+# Signing files
+*.jks
+*.keystore
+keystore.properties
+
+# Native
+obj/
+libs/*.so
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
