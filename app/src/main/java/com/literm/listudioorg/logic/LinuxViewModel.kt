@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,19 +26,27 @@ import com.literm.listudioorg.data.local.AppDatabase
 import com.literm.listudioorg.data.local.LinuxInstance
 import com.literm.listudioorg.data.local.LinuxInstanceDao
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+/**
+ * 本地 Linux 发行版列表与安装流程。
+ *
+ * [instanceDao] 的写方法是阻塞的，这里统一用 [withContext] 包到 IO 线程再调用。
+ */
 class LinuxViewModel(
     private val instanceDao: LinuxInstanceDao,
 ) : ViewModel() {
     private val _distros = MutableStateFlow(defaultLinuxDistros())
     val distros: StateFlow<List<LinuxDistro>> = _distros.asStateFlow()
 
+    /** 已安装发行版 id 快照，避免下载过程中被旧数据覆盖。 */
     @Volatile
     private var installedIds: Set<String> = emptySet()
 
@@ -51,6 +59,7 @@ class LinuxViewModel(
         }
     }
 
+    /** 把数据库里的安装状态同步到界面，正在下载的条目保持不变。 */
     private fun applyInstalledState(installedIds: Set<String>) {
         updateDistros { distros ->
             distros.map { distro ->
@@ -70,6 +79,7 @@ class LinuxViewModel(
         }
     }
 
+    /** 下载并解压 rootfs，成功后写入安装记录。 */
     fun startDownload(context: Context, distroId: String) {
         val distro = _distros.value.firstOrNull { it.id == distroId } ?: return
         if (distro.installStatus != LinuxInstallStatus.NotInstalled) return
@@ -107,12 +117,14 @@ class LinuxViewModel(
                     archiveFile = archiveFile,
                 )
 
-                instanceDao.upsert(
-                    LinuxInstance(
-                        id = distroId,
-                        isInstalled = true,
-                    ),
-                )
+                withContext(Dispatchers.IO) {
+                    instanceDao.upsert(
+                        LinuxInstance(
+                            id = distroId,
+                            isInstalled = true,
+                        ),
+                    )
+                }
 
                 updateDistro(distroId) { current ->
                     current.copy(
@@ -129,6 +141,7 @@ class LinuxViewModel(
         }
     }
 
+    /** 下载失败或被取消时恢复状态：仍算已安装就回到已安装。 */
     private fun resetDownload(distroId: String) {
         val stillInstalled = distroId in installedIds
         updateDistro(distroId) { current ->
@@ -170,7 +183,7 @@ class LinuxViewModel(
                 )
                 val database = AppDatabase.getInstance(application)
                 LinuxViewModel(
-                    instanceDao = database.linuxInstanceDao(),
+                    instanceDao = database.linuxInstanceDao,
                 )
             }
         }

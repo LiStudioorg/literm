@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.literm.listudioorg.R
 import com.literm.listudioorg.data.local.Host
+import com.literm.listudioorg.data.local.KeyEntity
 import com.literm.listudioorg.ui.components.BrandMark
 import com.literm.listudioorg.ui.theme.LiTermTheme
 import com.literm.listudioorg.ui.viewmodel.HostViewModel
+import com.literm.listudioorg.ui.viewmodel.KeyViewModel
 
 private enum class MainDestination(
     @StringRes val labelRes: Int,
@@ -81,12 +83,19 @@ private enum class MainDestination(
     LocalLinux(R.string.nav_local_linux, Icons.Outlined.Terminal),
 }
 
+/**
+ * 应用主页：负责在主机 / 本地 Linux / 密钥 / 片段 / 日志 / 设置之间切换，
+ * 并把终端页面的全屏视图叠加在导航内容之上。
+ */
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
     hostViewModel: HostViewModel = viewModel(factory = HostViewModel.Factory),
+    keyViewModel: KeyViewModel = viewModel(factory = KeyViewModel.Factory),
 ) {
     val hosts by hostViewModel.hosts.collectAsStateWithLifecycle()
+    // 添加主机时“使用密钥”需要从 Keychain 取列表。
+    val keys by keyViewModel.keys.collectAsStateWithLifecycle()
     var activeHost by remember { mutableStateOf<Host?>(null) }
     var activeLocalLinux by remember { mutableStateOf<String?>(null) }
 
@@ -110,6 +119,7 @@ fun MainScreen(
         else -> {
             MainScreenContent(
                 hosts = hosts,
+                availableKeys = keys,
                 onAddHost = hostViewModel::addHost,
                 onHostClick = { activeHost = it },
                 onStartLocalLinux = { distroId -> activeLocalLinux = distroId },
@@ -126,6 +136,7 @@ internal fun MainScreenContent(
     onHostClick: (Host) -> Unit,
     onStartLocalLinux: (String) -> Unit,
     modifier: Modifier = Modifier,
+    availableKeys: List<KeyEntity> = emptyList(),
 ) {
     var selectedDestination by rememberSaveable { mutableStateOf(MainDestination.Hosts) }
 
@@ -168,6 +179,7 @@ internal fun MainScreenContent(
                     DestinationContent(
                         destination = selectedDestination,
                         hosts = hosts,
+                        availableKeys = availableKeys,
                         onAddHost = onAddHost,
                         onHostClick = onHostClick,
                         onStartLocalLinux = onStartLocalLinux,
@@ -179,10 +191,14 @@ internal fun MainScreenContent(
     }
 }
 
+/**
+ * 根据当前导航目的地渲染对应页面，占位页已全部替换为真实实现。
+ */
 @Composable
 private fun DestinationContent(
     destination: MainDestination,
     hosts: List<Host>,
+    availableKeys: List<KeyEntity>,
     onAddHost: (Host) -> Unit,
     onHostClick: (Host) -> Unit,
     onStartLocalLinux: (String) -> Unit,
@@ -191,6 +207,7 @@ private fun DestinationContent(
     when (destination) {
         MainDestination.Hosts -> HostListScreen(
             hosts = hosts,
+            availableKeys = availableKeys,
             onAddHost = onAddHost,
             onHostClick = onHostClick,
             modifier = modifier,
@@ -199,15 +216,10 @@ private fun DestinationContent(
             onStartLocalLinux = onStartLocalLinux,
             modifier = modifier,
         )
-        MainDestination.Keychain,
-        MainDestination.Snippets,
-        MainDestination.Logs,
-        MainDestination.Settings,
-        -> PlaceholderScreen(
-            titleRes = destination.labelRes,
-            icon = destination.icon,
-            modifier = modifier,
-        )
+        MainDestination.Keychain -> KeychainScreen(modifier = modifier)
+        MainDestination.Snippets -> SnippetsScreen(modifier = modifier)
+        MainDestination.Logs -> LogsScreen(modifier = modifier)
+        MainDestination.Settings -> SettingsScreen(modifier = modifier)
     }
 }
 

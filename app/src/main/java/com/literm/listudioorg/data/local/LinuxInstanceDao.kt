@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,68 @@
 
 package com.literm.listudioorg.data.local
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import android.content.ContentValues
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 import kotlinx.coroutines.flow.Flow
 
-@Dao
-interface LinuxInstanceDao {
-    @Query("SELECT id FROM linux_instances WHERE isInstalled = 1")
-    fun observeInstalledIds(): Flow<List<String>>
+/**
+ * 记录哪些 Linux 发行版已经安装，供本地 PRoot 终端使用。
+ */
+class LinuxInstanceDao(
+    private val helper: SQLiteOpenHelper,
+    private val notifier: TableChangeNotifier,
+) {
+    /** 订阅已安装的发行版 id 列表。 */
+    fun observeInstalledIds(): Flow<List<String>> = notifier.listFlow(TABLE) {
+        helper.readableDatabase.query(
+            TABLE,
+            arrayOf(LinuxInstanceColumns.ID),
+            "${LinuxInstanceColumns.INSTALLED} = 1",
+            null,
+            null,
+            null,
+            "${LinuxInstanceColumns.ID} ASC",
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(cursor.stringValue(LinuxInstanceColumns.ID))
+                }
+            }
+        }
+    }
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(instance: LinuxInstance)
+    /** 存在则覆盖，不存在则插入。 */
+    fun upsert(instance: LinuxInstance) {
+        helper.writableDatabase.insertWithOnConflict(
+            TABLE,
+            null,
+            ContentValues().apply {
+                put(LinuxInstanceColumns.ID, instance.id)
+                put(LinuxInstanceColumns.INSTALLED, if (instance.isInstalled) 1 else 0)
+            },
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+        notifier.notifyTableChanged(TABLE)
+    }
 
-    @Query("DELETE FROM linux_instances WHERE id = :id")
-    suspend fun deleteById(id: String)
+    /** 卸载时移除安装记录。 */
+    fun deleteById(id: String) {
+        helper.writableDatabase.delete(
+            TABLE,
+            "${LinuxInstanceColumns.ID} = ?",
+            arrayOf(id),
+        )
+        notifier.notifyTableChanged(TABLE)
+    }
+
+    companion object {
+        const val TABLE = LiTermSQLiteOpenHelper.TABLE_LINUX_INSTANCES
+    }
+}
+
+/** linux_instances 表的列名。 */
+private object LinuxInstanceColumns {
+    const val ID = "id"
+    const val INSTALLED = "isInstalled"
 }

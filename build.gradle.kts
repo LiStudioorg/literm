@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,5 +18,4 @@ plugins {
     id("com.android.application") version "8.13.0" apply false
     id("org.jetbrains.kotlin.android") version "2.2.20" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.2.20" apply false
-    id("com.google.devtools.ksp") version "2.2.20-2.0.4" apply false
 }

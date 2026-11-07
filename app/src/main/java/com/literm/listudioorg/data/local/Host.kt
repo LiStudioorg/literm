@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@
 
 package com.literm.listudioorg.data.local
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "hosts")
+/**
+ * 已保存的 SSH 主机，对应 SQLite 表 `hosts`。
+ */
 data class Host(
-    @PrimaryKey(autoGenerate = true)
     val id: Long = 0L,
     val name: String,
     val ip: String,
     val port: Int = 22,
     val username: String,
-    // Stored as plaintext for this iteration, as requested.
+    // 按当前需求以明文保存。
     val password: String? = null,
-    // Stored as plaintext for this iteration, as requested.
+    // 按当前需求以明文保存。
     val privateKey: String? = null,
 )

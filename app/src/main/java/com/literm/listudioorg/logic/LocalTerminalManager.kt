@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ import kotlinx.coroutines.withContext
 
 private const val PROOT_BINARY_NAME = "libproot.so"
 
+/** 写入 app.log 的标签。 */
+private const val TAG = "PRoot"
+
 sealed interface LocalTerminalState {
     data object Starting : LocalTerminalState
     data object Running : LocalTerminalState
@@ -45,7 +48,13 @@ interface LocalTerminalListener {
     fun onStateChanged(state: LocalTerminalState)
 }
 
-class LocalTerminalManager {
+/**
+ * 本地 PRoot 终端管理器。
+ *
+ * 通过 [ProcessBuilder] 启动 `nativeLibraryDir/libproot.so`，[sendInput] 会补换行，
+ * [sendRawInput] 则原样写入（供悬浮球的 Ctrl/Esc/Tab/方向键使用）。
+ */
+class LocalTerminalManager : TerminalInputTarget {
     @Volatile
     var listener: LocalTerminalListener? = null
 
@@ -93,6 +102,7 @@ class LocalTerminalManager {
                 }
 
                 val shell = if (distroId == "alpine") "/bin/sh" else "/bin/bash"
+                // PRoot 启动命令会写进 app.log，方便在日志页直接复现问题。
                 val command = listOf(
                     prootFile.absolutePath,
                     "--link2symlink",
@@ -115,6 +125,8 @@ class LocalTerminalManager {
                     shell,
                 )
 
+                AppLogger.log(TAG, "启动 PRoot：${command.joinToString(" ")}")
+
                 val newProcess = ProcessBuilder(command)
                     .directory(context.filesDir)
                     .start()
@@ -128,6 +140,7 @@ class LocalTerminalManager {
                 }
 
                 val exitCode = newProcess.waitFor()
+                AppLogger.log(TAG, "PRoot 退出，exitCode=$exitCode（发行版 $distroId）")
                 if (process === newProcess) {
                     process = null
                 }
@@ -145,6 +158,7 @@ class LocalTerminalManager {
                 running = false
                 throw cancelled
             } catch (error: Exception) {
+                AppLogger.log(TAG, "PRoot 启动失败（发行版 $distroId）", error)
                 process?.destroy()
                 process = null
                 running = false
@@ -175,6 +189,26 @@ class LocalTerminalManager {
         }
     }
 
+    /**
+     * 悬浮球快捷键注入：原样写入进程 stdin，不补换行，
+     * 否则 Ctrl/方向键这类控制序列会被当成回车执行。
+     */
+    override fun sendRawInput(text: String): Boolean {
+        if (closed || !running || text.isEmpty()) {
+            return false
+        }
+
+        val currentProcess = process ?: return false
+        return try {
+            currentProcess.outputStream.write(text.toByteArray(Charsets.UTF_8))
+            currentProcess.outputStream.flush()
+            true
+        } catch (error: IOException) {
+            AppLogger.log(TAG, "写入快捷键失败", error)
+            false
+        }
+    }
+
     fun stop() {
         closed = true
         running = false
@@ -197,7 +231,7 @@ class LocalTerminalManager {
                 }
             }
         } catch (_: IOException) {
-            // The stream can be closed while PRoot is shutting down.
+            // PRoot 退出过程中流可能已被关闭，这里忽略即可。
         }
     }
 

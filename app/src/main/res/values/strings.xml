@@ -21,8 +21,6 @@
     <string name="add_host_port">Port</string>
     <string name="add_host_username">Username</string>
     <string name="add_host_password">Password (plaintext)</string>
-    <string name="add_host_private_key">Private key (plaintext)</string>
-    <string name="add_host_private_key_hint">Paste the private key content</string>
     <string name="add_host_save">Save</string>
     <string name="add_host_cancel">Cancel</string>
     <string name="add_host_name_required">Alias is required</string>
@@ -81,6 +79,100 @@
     <string name="distro_kali_desc">A security toolkit for penetration testing and security audits.</string>
     <string name="distro_kali_size">~780 MB</string>
 
-    <string name="coming_soon">Coming Soon</string>
-    <string name="coming_soon_message">%1$s is under development.</string>
+    <!-- 密钥页（Keychain） -->
+    <string name="keychain_title">Keychain</string>
+    <string name="keychain_subtitle">SSH private keys stored on this device</string>
+    <string name="keychain_saved_keys">Saved keys</string>
+    <string name="keychain_add">Add key</string>
+    <string name="keychain_empty_title">No keys yet</string>
+    <string name="keychain_empty_hint">Add a private key to authenticate without a password.</string>
+    <plurals name="key_count">
+        <item quantity="one">%1$d key</item>
+        <item quantity="other">%1$d keys</item>
+    </plurals>
+    <string name="key_new_title">New Key</string>
+    <string name="key_name">Key name</string>
+    <string name="key_name_hint">e.g. work-ed25519</string>
+    <string name="key_name_required">Key name is required</string>
+    <string name="key_content">Private key (plaintext)</string>
+    <string name="key_content_hint">Paste the full private key</string>
+    <string name="key_content_required">Private key content is required</string>
+    <string name="key_save">Save</string>
+    <string name="key_cancel">Cancel</string>
+    <string name="key_close">Close</string>
+    <string name="key_delete_title">Delete key</string>
+    <string name="key_delete_message">Delete \"%1$s\"? Hosts using this key will need a new credential.</string>
+    <string name="key_delete_confirm">Delete</string>
+    <string name="key_delete_cancel">Keep</string>
+
+    <!-- 命令片段页（Snippets） -->
+    <string name="snippets_title">Snippets</string>
+    <string name="snippets_subtitle">Reuse your most frequent commands</string>
+    <string name="snippets_saved">Saved snippets</string>
+    <string name="snippets_add">Add snippet</string>
+    <string name="snippets_empty_title">No snippets yet</string>
+    <string name="snippets_empty_hint">Save a command once, then copy it into any terminal with one tap.</string>
+    <plurals name="snippet_count">
+        <item quantity="one">%1$d snippet</item>
+        <item quantity="other">%1$d snippets</item>
+    </plurals>
+    <string name="snippet_new_title">New Snippet</string>
+    <string name="snippet_name">Title</string>
+    <string name="snippet_name_hint">e.g. Disk usage</string>
+    <string name="snippet_name_required">Title is required</string>
+    <string name="snippet_command">Command</string>
+    <string name="snippet_command_hint">du -sh /* | sort -h</string>
+    <string name="snippet_command_required">Command is required</string>
+    <string name="snippet_save">Save</string>
+    <string name="snippet_cancel">Cancel</string>
+    <string name="snippet_delete_title">Delete snippet</string>
+    <string name="snippet_delete_message">Delete \"%1$s\"?</string>
+    <string name="snippet_delete_confirm">Delete</string>
+    <string name="snippet_delete_cancel">Keep</string>
+    <string name="snippets_copied">Command copied</string>
+    <string name="snippets_copy_failed">Unable to copy the command</string>
+    <string name="snippets_copy_hint">Copy command</string>
+
+    <!-- 添加主机表单：认证方式 -->
+    <string name="add_host_auth_method">Authentication</string>
+    <string name="add_host_auth_password">Use password</string>
+    <string name="add_host_auth_key">Use private key</string>
+    <string name="add_host_select_key">Key from Keychain</string>
+    <string name="add_host_select_key_placeholder">Choose a key</string>
+    <string name="add_host_select_key_required">Choose a private key</string>
+    <string name="add_host_no_keys">No keys in Keychain yet. Add one on the Keychain tab.</string>
+    <string name="add_host_pick_key_title">Select a key</string>
+
+    <!-- 前台服务通知 -->
+    <string name="terminal_service_channel_name">Active sessions</string>
+    <string name="terminal_service_channel_description">Keeps SSH and local Linux sessions alive in the background.</string>
+    <string name="terminal_service_title">LiTerm session running</string>
+    <string name="terminal_service_text">A terminal session is active. Tap to reopen.</string>
+
+    <!-- 悬浮球快捷按键 -->
+    <string name="float_window_open">Open shortcut keys</string>
+    <string name="float_window_ctrl">Ctrl</string>
+    <string name="float_window_esc">Esc</string>
+    <string name="float_window_tab">Tab</string>
+    <string name="float_window_left">←</string>
+    <string name="float_window_up">↑</string>
+    <string name="float_window_down">↓</string>
+    <string name="float_window_right">→</string>
+    <string name="float_window_no_session">No active terminal session</string>
+
+    <!-- 日志页 -->
+    <string name="logs_subtitle">SSH and PRoot diagnostics on this device</string>
+    <string name="logs_clear">Clear logs</string>
+    <string name="logs_cleared">Logs cleared</string>
+    <string name="logs_share">Share logs</string>
+    <string name="logs_share_chooser">Share log file</string>
+    <string name="logs_share_failed">Unable to share the log file</string>
+    <string name="logs_empty">No log entries yet</string>
+
+    <!-- 设置页 -->
+    <string name="settings_subtitle">Behaviour of LiTerm on this device</string>
+    <string name="settings_shortcuts_title">Floating shortcut keys</string>
+    <string name="settings_shortcuts_description">Show a draggable ball with Ctrl, Esc, Tab and arrow keys over the terminal.</string>
+    <string name="settings_shortcuts_permission">LiTerm needs the \"Display over other apps\" permission to show the floating ball.</string>
+    <string name="settings_shortcuts_unavailable">This device does not allow drawing over other apps</string>
 </resources>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/**
+ * 主机列表的界面状态与增删改操作。
+ */
 class HostViewModel(
     private val repository: HostRepository,
 ) : ViewModel() {
+    /** 主机列表，页面退订 5 秒后自动停止查询。 */
     val hosts: StateFlow<List<Host>> = repository.hosts.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000L),
@@ -70,7 +74,7 @@ class HostViewModel(
                 )
                 val database = AppDatabase.getInstance(application)
                 HostViewModel(
-                    repository = HostRepository(database.hostDao()),
+                    repository = HostRepository(database.hostDao),
                 )
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
 }
 
 android {
@@ -99,9 +98,7 @@ dependencies {
 
     implementation("com.github.mwiede:jsch:2.28.8")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("androidx.room:room-runtime:2.7.2")
-    implementation("androidx.room:room-ktx:2.7.2")
-    ksp("androidx.room:room-compiler:2.7.2")
+    // 直接使用系统自带的 SQLite（SQLiteOpenHelper），不再依赖 Room。
     implementation("androidx.work:work-runtime-ktx:2.10.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")

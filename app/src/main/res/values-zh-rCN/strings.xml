@@ -21,8 +21,6 @@
     <string name="add_host_port">端口</string>
     <string name="add_host_username">用户名</string>
     <string name="add_host_password">密码（明文）</string>
-    <string name="add_host_private_key">私钥（明文）</string>
-    <string name="add_host_private_key_hint">粘贴私钥内容</string>
     <string name="add_host_save">保存</string>
     <string name="add_host_cancel">取消</string>
     <string name="add_host_name_required">别名为必填项</string>
@@ -81,6 +79,100 @@
     <string name="distro_kali_desc">面向渗透测试与安全审计的工具集合。</string>
     <string name="distro_kali_size">约 780 MB</string>
 
-    <string name="coming_soon">Coming Soon</string>
-    <string name="coming_soon_message">「%1$s」功能正在开发中。</string>
+    <!-- 密钥页（Keychain） -->
+    <string name="keychain_title">密钥</string>
+    <string name="keychain_subtitle">保存在本机的 SSH 私钥</string>
+    <string name="keychain_saved_keys">已保存的密钥</string>
+    <string name="keychain_add">添加密钥</string>
+    <string name="keychain_empty_title">还没有密钥</string>
+    <string name="keychain_empty_hint">添加私钥后即可免密码登录主机。</string>
+    <plurals name="key_count">
+        <item quantity="one">%1$d 把密钥</item>
+        <item quantity="other">%1$d 把密钥</item>
+    </plurals>
+    <string name="key_new_title">新建密钥</string>
+    <string name="key_name">密钥名称</string>
+    <string name="key_name_hint">例如 work-ed25519</string>
+    <string name="key_name_required">密钥名称为必填项</string>
+    <string name="key_content">私钥（明文）</string>
+    <string name="key_content_hint">粘贴完整私钥内容</string>
+    <string name="key_content_required">私钥内容为必填项</string>
+    <string name="key_save">保存</string>
+    <string name="key_cancel">取消</string>
+    <string name="key_close">关闭</string>
+    <string name="key_delete_title">删除密钥</string>
+    <string name="key_delete_message">确定删除「%1$s」？使用该密钥的主机需要重新配置凭证。</string>
+    <string name="key_delete_confirm">删除</string>
+    <string name="key_delete_cancel">保留</string>
+
+    <!-- 命令片段页（Snippets） -->
+    <string name="snippets_title">代码片段</string>
+    <string name="snippets_subtitle">复用常用的命令</string>
+    <string name="snippets_saved">已保存的片段</string>
+    <string name="snippets_add">添加片段</string>
+    <string name="snippets_empty_title">还没有片段</string>
+    <string name="snippets_empty_hint">保存一次命令，之后点一下就能复制到任意终端。</string>
+    <plurals name="snippet_count">
+        <item quantity="one">%1$d 个片段</item>
+        <item quantity="other">%1$d 个片段</item>
+    </plurals>
+    <string name="snippet_new_title">新建片段</string>
+    <string name="snippet_name">标题</string>
+    <string name="snippet_name_hint">例如 查看磁盘占用</string>
+    <string name="snippet_name_required">标题为必填项</string>
+    <string name="snippet_command">命令</string>
+    <string name="snippet_command_hint">du -sh /* | sort -h</string>
+    <string name="snippet_command_required">命令为必填项</string>
+    <string name="snippet_save">保存</string>
+    <string name="snippet_cancel">取消</string>
+    <string name="snippet_delete_title">删除片段</string>
+    <string name="snippet_delete_message">确定删除「%1$s」？</string>
+    <string name="snippet_delete_confirm">删除</string>
+    <string name="snippet_delete_cancel">保留</string>
+    <string name="snippets_copied">命令已复制</string>
+    <string name="snippets_copy_failed">无法复制命令</string>
+    <string name="snippets_copy_hint">复制命令</string>
+
+    <!-- 添加主机表单：认证方式 -->
+    <string name="add_host_auth_method">认证方式</string>
+    <string name="add_host_auth_password">使用密码</string>
+    <string name="add_host_auth_key">使用密钥</string>
+    <string name="add_host_select_key">选择 Keychain 密钥</string>
+    <string name="add_host_select_key_placeholder">请选择密钥</string>
+    <string name="add_host_select_key_required">请选择一把私钥</string>
+    <string name="add_host_no_keys">Keychain 中还没有密钥，请先在「密钥」页添加。</string>
+    <string name="add_host_pick_key_title">选择密钥</string>
+
+    <!-- 前台服务通知 -->
+    <string name="terminal_service_channel_name">活跃会话</string>
+    <string name="terminal_service_channel_description">让 SSH 与本地 Linux 会话在后台保持运行。</string>
+    <string name="terminal_service_title">LiTerm 会话运行中</string>
+    <string name="terminal_service_text">有终端会话正在进行，点按可返回。</string>
+
+    <!-- 悬浮球快捷按键 -->
+    <string name="float_window_open">打开快捷按键</string>
+    <string name="float_window_ctrl">Ctrl</string>
+    <string name="float_window_esc">Esc</string>
+    <string name="float_window_tab">Tab</string>
+    <string name="float_window_left">←</string>
+    <string name="float_window_up">↑</string>
+    <string name="float_window_down">↓</string>
+    <string name="float_window_right">→</string>
+    <string name="float_window_no_session">当前没有活动终端</string>
+
+    <!-- 日志页 -->
+    <string name="logs_subtitle">本机的 SSH 与 PRoot 诊断信息</string>
+    <string name="logs_clear">清空日志</string>
+    <string name="logs_cleared">日志已清空</string>
+    <string name="logs_share">分享日志</string>
+    <string name="logs_share_chooser">分享日志文件</string>
+    <string name="logs_share_failed">无法分享日志文件</string>
+    <string name="logs_empty">暂无日志</string>
+
+    <!-- 设置页 -->
+    <string name="settings_subtitle">LiTerm 在本机上的行为</string>
+    <string name="settings_shortcuts_title">启用悬浮窗快捷键</string>
+    <string name="settings_shortcuts_description">在终端上方显示可拖动悬浮球，提供 Ctrl、Esc、Tab 与方向键。</string>
+    <string name="settings_shortcuts_permission">需要授予「显示在其他应用上层」权限，悬浮球才能出现。</string>
+    <string name="settings_shortcuts_unavailable">当前系统不允许显示在其他应用上层</string>
 </resources>

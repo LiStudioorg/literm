@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ fun defaultLinuxDistros(): List<LinuxDistro> = listOf(
         arm64Arch = "arm64",
         x86_64Arch = "amd64",
     ),
-    // The official Debian, Arch, and Kali rootfs archives are compressed with
-    // xz or zstd. UserLAnd publishes equivalent gzip archives for both ABIs.
+    // Debian、Arch、Kali 官方 rootfs 用 xz 或 zstd 压缩，
+    // 这里改用 UserLAnd 发布的等价 gzip 包，两种 ABI 都有。
     LinuxDistro(
         id = "debian",
         name = "Debian",

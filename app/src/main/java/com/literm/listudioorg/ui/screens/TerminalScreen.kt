@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.literm.listudioorg.R
 import com.literm.listudioorg.data.local.Host
+import com.literm.listudioorg.logic.ActiveTerminal
 import com.literm.listudioorg.logic.LocalTerminalListener
 import com.literm.listudioorg.logic.LocalTerminalManager
 import com.literm.listudioorg.logic.LocalTerminalState
@@ -82,6 +83,7 @@ import com.literm.listudioorg.logic.SshConnectionState
 import com.literm.listudioorg.logic.SshListener
 import com.literm.listudioorg.logic.SshManager
 import com.literm.listudioorg.logic.defaultLinuxDistros
+import com.literm.listudioorg.service.TerminalService
 import kotlinx.coroutines.launch
 
 private val TerminalBackground = Color(0xFF000000)
@@ -137,9 +139,16 @@ fun TerminalScreen(
             }
         }
 
+        // 进入终端：拉起前台服务防杀后台，并把会话注册给悬浮球。
+        TerminalService.start(context)
+        ActiveTerminal.attach(manager)
+
         onDispose {
+            // 退出终端：注销会话，没有会话时关闭前台服务。
+            ActiveTerminal.detach(manager)
             manager.listener = null
             manager.disconnect()
+            TerminalService.stop(context)
         }
     }
 
@@ -242,9 +251,15 @@ fun LocalTerminalScreen(
             }
         }
 
+        // 本地 PRoot 终端同样需要前台服务与悬浮球输入通道。
+        TerminalService.start(context)
+        ActiveTerminal.attach(manager)
+
         onDispose {
+            ActiveTerminal.detach(manager)
             manager.listener = null
             manager.stop()
+            TerminalService.stop(context)
         }
     }
 

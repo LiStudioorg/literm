@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.literm.listudioorg.R
 import com.literm.listudioorg.data.local.Host
+import com.literm.listudioorg.data.local.KeyEntity
 import com.literm.listudioorg.ui.components.AddHostDialog
 import com.literm.listudioorg.ui.components.SectionHeader
 import com.literm.listudioorg.ui.theme.LiTermTheme
@@ -126,6 +127,7 @@ fun HostListScreen(
     onAddHost: (Host) -> Unit,
     onHostClick: (Host) -> Unit,
     modifier: Modifier = Modifier,
+    availableKeys: List<KeyEntity> = emptyList(),
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var showAddHostDialog by rememberSaveable { mutableStateOf(false) }
@@ -209,6 +211,7 @@ fun HostListScreen(
         if (showAddHostDialog) {
             AddHostDialog(
                 onDismissRequest = { showAddHostDialog = false },
+                availableKeys = availableKeys,
                 onSave = { host ->
                     onAddHost(host)
                     showAddHostDialog = false

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 li63050a <li63050@foxmail.com>
+ * Copyright 2026 li63050a <li63050@foxmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,10 @@
 
 package com.literm.listudioorg.data.local
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "linux_instances")
+/**
+ * 本地 Linux 发行版的安装状态，对应 SQLite 表 `linux_instances`。
+ */
 data class LinuxInstance(
-    @PrimaryKey
     val id: String,
     val isInstalled: Boolean = false,
 )
