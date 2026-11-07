@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
@@ -32,8 +32,11 @@ import kotlinx.coroutines.flow.update
  *
  * SQLite 自身不会推送变更事件，所以每个 DAO 在写完数据后要主动调用 [notifyTableChanged]，
  * 订阅方收到通知就在 IO 线程重跑一次查询。进程内单例注册表足够当前应用使用。
+ *
+ * 注意：本类作为各 DAO（public）构造函数的参数类型出现，
+ * 不能声明为 internal，否则整个 app 模块会因“public 签名暴露 internal 类型”编译失败。
  */
-internal class TableChangeNotifier(
+class TableChangeNotifier(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     /** 每张表一个版本号，写入时自增，作为“数据变了”的信号。 */
@@ -41,14 +44,21 @@ internal class TableChangeNotifier(
 
     /**
      * 订阅时先查询一次，之后每当 [table] 发生变更就重新执行 [query]。
+     *
+     * 先记录版本号再执行查询：如果写入通知正好落在“查询完成”与“开始等待通知”之间，
+     * 也能通过 `it > seen` 立刻察觉并补一次查询，不会漏掉这次刷新。
      */
     fun <T> queryFlow(
         table: String,
         query: () -> T,
     ): Flow<T> = flow {
-        emit(query())
-        // drop(1) 去掉版本号的初始值，避免和首屏查询重复。
-        versionFlow(table).drop(1).collect { emit(query()) }
+        val version = versionFlow(table)
+        var seen = version.value
+        while (true) {
+            emit(query())
+            // 等待该表的下一次写入；StateFlow 会重放最新值，因此多次写入只会补一次查询。
+            seen = version.first { current -> current > seen }
+        }
     }.flowOn(ioDispatcher).distinctUntilChanged()
 
     /** 列表查询的快捷写法，调用处不必再传空列表。 */
