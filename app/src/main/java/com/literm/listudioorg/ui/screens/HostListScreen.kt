@@ -46,7 +46,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,63 +76,61 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.literm.listudioorg.R
+import com.literm.listudioorg.data.local.Host
+import com.literm.listudioorg.ui.components.AddHostDialog
 import com.literm.listudioorg.ui.components.SectionHeader
 import com.literm.listudioorg.ui.theme.LiTermTheme
 
-private data class Host(
-    val id: String,
-    val alias: String,
-    val address: String,
-    val user: String,
-    val tags: List<String>,
-    val accent: Color,
-    val isOnline: Boolean,
+private val HostAccentColors = listOf(
+    Color(0xFF2E7D32),
+    Color(0xFF1565C0),
+    Color(0xFF6A1B9A),
+    Color(0xFFEF6C00),
+    Color(0xFF00838F),
 )
 
-private val sampleHosts = listOf(
+private val PreviewHosts = listOf(
     Host(
-        id = "prod-web",
-        alias = "prod-web",
-        address = "192.168.1.100",
-        user = "root",
-        tags = listOf("ssh"),
-        accent = Color(0xFF2E7D32),
-        isOnline = true,
+        id = 1L,
+        name = "prod-web",
+        ip = "192.168.1.100",
+        port = 22,
+        username = "root",
     ),
     Host(
-        id = "home-nas",
-        alias = "home-nas",
-        address = "192.168.1.20",
-        user = "admin",
-        tags = listOf("ssh", "sftp"),
-        accent = Color(0xFF1565C0),
-        isOnline = true,
+        id = 2L,
+        name = "home-nas",
+        ip = "192.168.1.20",
+        port = 22,
+        username = "admin",
     ),
     Host(
-        id = "dev-sandbox",
-        alias = "dev-sandbox",
-        address = "dev.literm.app",
-        user = "literm",
-        tags = listOf("ssh", "docker"),
-        accent = Color(0xFF6A1B9A),
-        isOnline = true,
+        id = 3L,
+        name = "dev-sandbox",
+        ip = "dev.literm.app",
+        port = 2222,
+        username = "literm",
     ),
     Host(
-        id = "edge-pi",
-        alias = "edge-pi",
-        address = "10.0.0.42",
-        user = "ubuntu",
-        tags = listOf("ssh", "arm64"),
-        accent = Color(0xFFEF6C00),
-        isOnline = false,
+        id = 4L,
+        name = "edge-pi",
+        ip = "10.0.0.42",
+        port = 22,
+        username = "ubuntu",
     ),
 )
 
 @Composable
-fun HostListScreen(modifier: Modifier = Modifier) {
+fun HostListScreen(
+    hosts: List<Host>,
+    onAddHost: (Host) -> Unit,
+    onHostClick: (Host) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var query by rememberSaveable { mutableStateOf("") }
-    val filteredHosts = remember(query) {
-        sampleHosts.filter { host -> host.matches(query) }
+    var showAddHostDialog by rememberSaveable { mutableStateOf(false) }
+    val filteredHosts = remember(hosts, query) {
+        hosts.filter { host -> host.matches(query) }
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -146,7 +144,7 @@ fun HostListScreen(modifier: Modifier = Modifier) {
                 start = horizontalPadding,
                 top = 24.dp,
                 end = horizontalPadding,
-                bottom = 32.dp,
+                bottom = 96.dp,
             ),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -155,36 +153,67 @@ fun HostListScreen(modifier: Modifier = Modifier) {
                 HostListHeader(
                     query = query,
                     onQueryChange = { query = it },
-                    hostCount = sampleHosts.size,
+                    hostCount = hosts.size,
                 )
             }
 
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                SectionHeader(
-                    title = stringResource(
-                        if (query.isBlank()) R.string.hosts_all else R.string.hosts_search_results,
-                    ),
-                    trailingText = pluralStringResource(
-                        R.plurals.host_count,
-                        filteredHosts.size,
-                        filteredHosts.size,
-                    ),
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
-            if (filteredHosts.isEmpty()) {
+            if (hosts.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyHosts(onClearSearch = { query = "" })
+                    EmptyHostDatabase()
                 }
             } else {
-                items(
-                    items = filteredHosts,
-                    key = { host -> host.id },
-                ) { host ->
-                    HostCard(host = host)
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    SectionHeader(
+                        title = stringResource(
+                            if (query.isBlank()) R.string.hosts_all else R.string.hosts_search_results,
+                        ),
+                        trailingText = pluralStringResource(
+                            R.plurals.host_count,
+                            filteredHosts.size,
+                            filteredHosts.size,
+                        ),
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+
+                if (filteredHosts.isEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        NoMatchingHosts(onClearSearch = { query = "" })
+                    }
+                } else {
+                    items(
+                        items = filteredHosts,
+                        key = { host -> host.id },
+                    ) { host ->
+                        HostCard(
+                            host = host,
+                            onClick = { onHostClick(host) },
+                        )
+                    }
                 }
             }
+        }
+
+        FloatingActionButton(
+            onClick = { showAddHostDialog = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(20.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Add,
+                contentDescription = stringResource(R.string.hosts_add),
+            )
+        }
+
+        if (showAddHostDialog) {
+            AddHostDialog(
+                onDismissRequest = { showAddHostDialog = false },
+                onSave = { host ->
+                    onAddHost(host)
+                    showAddHostDialog = false
+                },
+            )
         }
     }
 }
@@ -197,47 +226,32 @@ private fun HostListHeader(
 ) {
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = stringResource(R.string.hosts_title),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
-                        Text(
-                            text = hostCount.toString(),
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(2.dp))
-                Text(
-                    text = stringResource(R.string.hosts_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(Modifier.width(12.dp))
-            FilledTonalIconButton(
-                onClick = {},
-                modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(16.dp),
+            Text(
+                text = stringResource(R.string.hosts_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.width(8.dp))
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = stringResource(R.string.hosts_add),
+                Text(
+                    text = hostCount.toString(),
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
         }
+
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = stringResource(R.string.hosts_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         Spacer(Modifier.height(16.dp))
 
@@ -285,9 +299,14 @@ private fun HostListHeader(
 }
 
 @Composable
-private fun HostCard(host: Host) {
+private fun HostCard(
+    host: Host,
+    onClick: () -> Unit,
+) {
+    val accent = accentFor(host)
+
     Card(
-        onClick = {},
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
@@ -312,8 +331,8 @@ private fun HostCard(host: Host) {
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                host.accent,
-                                host.accent.copy(alpha = 0.72f),
+                                accent,
+                                accent.copy(alpha = 0.72f),
                             ),
                         ),
                     ),
@@ -330,34 +349,18 @@ private fun HostCard(host: Host) {
             Spacer(Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = host.alias,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (host.isOnline) {
-                                    Color(0xFF35C759)
-                                } else {
-                                    MaterialTheme.colorScheme.outline
-                                },
-                            ),
-                    )
-                }
+                Text(
+                    text = host.name.ifBlank { host.ip },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
                 Spacer(Modifier.height(3.dp))
 
                 Text(
-                    text = "${host.user}@${host.address}",
+                    text = "${host.username}@${host.ip}:${host.port}",
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -368,9 +371,8 @@ private fun HostCard(host: Host) {
                 Spacer(Modifier.height(10.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    host.tags.forEach { tag ->
-                        HostTag(tag = tag)
-                    }
+                    HostTag(tag = "SSH")
+                    HostTag(tag = stringResource(R.string.host_port_tag, host.port))
                 }
             }
 
@@ -391,8 +393,6 @@ private fun HostTag(tag: String) {
     val colorScheme = MaterialTheme.colorScheme
     val (containerColor, contentColor) = when (tag.lowercase()) {
         "ssh" -> colorScheme.primaryContainer.copy(alpha = 0.72f) to colorScheme.onPrimaryContainer
-        "sftp" -> colorScheme.tertiaryContainer.copy(alpha = 0.72f) to colorScheme.onTertiaryContainer
-        "docker" -> colorScheme.secondaryContainer.copy(alpha = 0.72f) to colorScheme.onSecondaryContainer
         else -> colorScheme.surfaceContainerHighest to colorScheme.onSurfaceVariant
     }
 
@@ -412,7 +412,45 @@ private fun HostTag(tag: String) {
 }
 
 @Composable
-private fun EmptyHosts(onClearSearch: () -> Unit) {
+private fun EmptyHostDatabase() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(
+            modifier = Modifier.size(76.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Dns,
+                    contentDescription = null,
+                    modifier = Modifier.size(34.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text(
+            text = stringResource(R.string.hosts_empty_database_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = stringResource(R.string.hosts_empty_database_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun NoMatchingHosts(onClearSearch: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -453,20 +491,26 @@ private fun EmptyHosts(onClearSearch: () -> Unit) {
     }
 }
 
+private fun accentFor(host: Host): Color {
+    val index = (host.id.hashCode() and Int.MAX_VALUE) % HostAccentColors.size
+    return HostAccentColors[index]
+}
+
 private fun Host.matches(query: String): Boolean {
     if (query.isBlank()) return true
     val normalizedQuery = query.trim()
-    return alias.contains(normalizedQuery, ignoreCase = true) ||
-        address.contains(normalizedQuery, ignoreCase = true) ||
-        user.contains(normalizedQuery, ignoreCase = true) ||
-        tags.any { tag -> tag.contains(normalizedQuery, ignoreCase = true) }
+    return name.contains(normalizedQuery, ignoreCase = true) ||
+        ip.contains(normalizedQuery, ignoreCase = true) ||
+        username.contains(normalizedQuery, ignoreCase = true) ||
+        port.toString().contains(normalizedQuery) ||
+        "ssh".contains(normalizedQuery, ignoreCase = true)
 }
 
 @Preview(name = "Hosts phone", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun HostListPhonePreview() {
     LiTermTheme {
-        HostListScreen()
+        HostListScreen(hosts = PreviewHosts, onAddHost = {}, onHostClick = {})
     }
 }
 
@@ -474,6 +518,14 @@ private fun HostListPhonePreview() {
 @Composable
 private fun HostListTabletPreview() {
     LiTermTheme {
-        HostListScreen()
+        HostListScreen(hosts = PreviewHosts, onAddHost = {}, onHostClick = {})
+    }
+}
+
+@Preview(name = "Hosts empty database", showBackground = true, widthDp = 390, heightDp = 844)
+@Composable
+private fun HostListEmptyPreview() {
+    LiTermTheme {
+        HostListScreen(hosts = emptyList(), onAddHost = {}, onHostClick = {})
     }
 }

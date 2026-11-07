@@ -46,19 +46,18 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -66,81 +65,67 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.literm.listudioorg.R
+import com.literm.listudioorg.logic.LinuxDistro
+import com.literm.listudioorg.logic.LinuxInstallStatus
+import com.literm.listudioorg.logic.LinuxViewModel
+import com.literm.listudioorg.logic.defaultLinuxDistros
 import com.literm.listudioorg.ui.components.SectionHeader
 import com.literm.listudioorg.ui.theme.LiTermTheme
+import kotlin.math.roundToInt
 
-private data class LinuxDistro(
-    val id: String,
-    val name: String,
+private data class DistroVisual(
     val mark: String,
     val accent: Color,
-    @StringRes val descriptionRes: Int,
     @StringRes val sizeRes: Int,
-    val installedByDefault: Boolean,
 )
 
-private val linuxDistros = listOf(
-    LinuxDistro(
-        id = "alpine",
-        name = "Alpine Linux",
-        mark = "AL",
-        accent = Color(0xFF0F5D8C),
-        descriptionRes = R.string.distro_alpine_desc,
+private fun visualFor(distroId: String): DistroVisual = when (distroId) {
+    "alpine" -> DistroVisual("AL", Color(0xFF0F5D8C), R.string.distro_alpine_size)
+    "ubuntu" -> DistroVisual("UB", Color(0xFFE95420), R.string.distro_ubuntu_size)
+    "debian" -> DistroVisual("DE", Color(0xFFA81D33), R.string.distro_debian_size)
+    "arch" -> DistroVisual("AR", Color(0xFF1793D1), R.string.distro_arch_size)
+    "kali" -> DistroVisual("KA", Color(0xFF6E4AA8), R.string.distro_kali_size)
+    else -> DistroVisual(
+        mark = distroId.take(2).uppercase(),
+        accent = Color(0xFF546E7A),
         sizeRes = R.string.distro_alpine_size,
-        installedByDefault = true,
-    ),
-    LinuxDistro(
-        id = "ubuntu",
-        name = "Ubuntu",
-        mark = "UB",
-        accent = Color(0xFFE95420),
-        descriptionRes = R.string.distro_ubuntu_desc,
-        sizeRes = R.string.distro_ubuntu_size,
-        installedByDefault = true,
-    ),
-    LinuxDistro(
-        id = "debian",
-        name = "Debian",
-        mark = "DE",
-        accent = Color(0xFFA81D33),
-        descriptionRes = R.string.distro_debian_desc,
-        sizeRes = R.string.distro_debian_size,
-        installedByDefault = false,
-    ),
-    LinuxDistro(
-        id = "arch",
-        name = "Arch Linux",
-        mark = "AR",
-        accent = Color(0xFF1793D1),
-        descriptionRes = R.string.distro_arch_desc,
-        sizeRes = R.string.distro_arch_size,
-        installedByDefault = false,
-    ),
-    LinuxDistro(
-        id = "kali",
-        name = "Kali Linux",
-        mark = "KA",
-        accent = Color(0xFF6E4AA8),
-        descriptionRes = R.string.distro_kali_desc,
-        sizeRes = R.string.distro_kali_size,
-        installedByDefault = false,
-    ),
-)
+    )
+}
 
 @Composable
-fun LocalLinuxScreen(modifier: Modifier = Modifier) {
-    var installedDistroIds by remember {
-        mutableStateOf(
-            linuxDistros
-                .filter { distro -> distro.installedByDefault }
-                .map { distro -> distro.id }
-                .toSet(),
-        )
-    }
+fun LocalLinuxScreen(
+    onStartLocalLinux: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    linuxViewModel: LinuxViewModel = viewModel(factory = LinuxViewModel.Factory),
+) {
+    val distros by linuxViewModel.distros.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
+    LocalLinuxScreenContent(
+        distros = distros,
+        onDownload = { distroId ->
+            linuxViewModel.startDownload(context, distroId)
+        },
+        onStart = { distro -> onStartLocalLinux(distro.id) },
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun LocalLinuxScreenContent(
+    distros: List<LinuxDistro>,
+    onDownload: (String) -> Unit,
+    onStart: (LinuxDistro) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val contentWidth = if (maxWidth > 760.dp) 760.dp else maxWidth
+        val installedCount = distros.count { distro ->
+            distro.installStatus == LinuxInstallStatus.Installed
+        }
 
         LazyColumn(
             modifier = Modifier
@@ -159,26 +144,21 @@ fun LocalLinuxScreen(modifier: Modifier = Modifier) {
                     title = stringResource(R.string.local_linux_environments),
                     trailingText = stringResource(
                         R.string.local_linux_installed_count,
-                        installedDistroIds.size,
-                        linuxDistros.size,
+                        installedCount,
+                        distros.size,
                     ),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
 
             items(
-                items = linuxDistros,
+                items = distros,
                 key = { distro -> distro.id },
             ) { distro ->
-                val isInstalled = distro.id in installedDistroIds
                 LinuxDistroCard(
                     distro = distro,
-                    isInstalled = isInstalled,
-                    onAction = {
-                        if (!isInstalled) {
-                            installedDistroIds = installedDistroIds + distro.id
-                        }
-                    },
+                    onDownload = { onDownload(distro.id) },
+                    onStart = { onStart(distro) },
                 )
             }
 
@@ -251,9 +231,11 @@ private fun LocalLinuxHeader() {
 @Composable
 private fun LinuxDistroCard(
     distro: LinuxDistro,
-    isInstalled: Boolean,
-    onAction: () -> Unit,
+    onDownload: () -> Unit,
+    onStart: () -> Unit,
 ) {
+    val visual = visualFor(distro.id)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(22.dp),
@@ -279,15 +261,15 @@ private fun LinuxDistroCard(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                distro.accent,
-                                distro.accent.copy(alpha = 0.72f),
+                                visual.accent,
+                                visual.accent.copy(alpha = 0.72f),
                             ),
                         ),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = distro.mark,
+                    text = visual.mark,
                     color = Color.White,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -314,81 +296,165 @@ private fun LinuxDistroCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (isInstalled) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            text = stringResource(R.string.local_linux_installed),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = "  ·  ",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        text = stringResource(distro.sizeRes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                DistroMetaRow(
+                    distro = distro,
+                    sizeRes = visual.sizeRes,
+                )
             }
 
             Spacer(Modifier.width(12.dp))
 
-            if (isInstalled) {
-                FilledTonalButton(
-                    onClick = onAction,
-                    modifier = Modifier.height(40.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.local_linux_start),
-                        fontSize = 13.sp,
-                    )
-                }
-            } else {
-                Button(
-                    onClick = onAction,
-                    modifier = Modifier.height(40.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Download,
-                        contentDescription = null,
-                        modifier = Modifier.size(17.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.local_linux_install),
-                        fontSize = 13.sp,
-                    )
-                }
+            DistroAction(
+                distro = distro,
+                onDownload = onDownload,
+                onStart = onStart,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DistroMetaRow(
+    distro: LinuxDistro,
+    @StringRes sizeRes: Int,
+) {
+    val statusLabelRes: Int? = when (distro.installStatus) {
+        LinuxInstallStatus.NotInstalled -> null
+        LinuxInstallStatus.Downloading -> R.string.local_linux_downloading
+        LinuxInstallStatus.Installed -> R.string.local_linux_installed
+    }
+    val statusColor = when (distro.installStatus) {
+        LinuxInstallStatus.NotInstalled -> MaterialTheme.colorScheme.onSurfaceVariant
+        LinuxInstallStatus.Downloading -> MaterialTheme.colorScheme.tertiary
+        LinuxInstallStatus.Installed -> MaterialTheme.colorScheme.primary
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (statusLabelRes != null) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(statusColor),
+            )
+            Spacer(Modifier.width(5.dp))
+            Text(
+                text = stringResource(statusLabelRes),
+                style = MaterialTheme.typography.labelSmall,
+                color = statusColor,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "  ·  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Text(
+            text = stringResource(sizeRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun DistroAction(
+    distro: LinuxDistro,
+    onDownload: () -> Unit,
+    onStart: () -> Unit,
+) {
+    when (distro.installStatus) {
+        LinuxInstallStatus.NotInstalled -> {
+            Button(
+                onClick = onDownload,
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Download,
+                    contentDescription = null,
+                    modifier = Modifier.size(17.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.local_linux_download),
+                    fontSize = 13.sp,
+                )
+            }
+        }
+
+        LinuxInstallStatus.Downloading -> {
+            Column(
+                modifier = Modifier.width(96.dp),
+                horizontalAlignment = Alignment.End,
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.local_linux_progress_percent,
+                        (distro.downloadProgress.coerceIn(0f, 1f) * 100).roundToInt(),
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { distro.downloadProgress.coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+            }
+        }
+
+        LinuxInstallStatus.Installed -> {
+            FilledTonalButton(
+                onClick = onStart,
+                modifier = Modifier.height(40.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(17.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(R.string.local_linux_start),
+                    fontSize = 13.sp,
+                )
             }
         }
     }
 }
 
+private fun previewDistros(): List<LinuxDistro> =
+    defaultLinuxDistros().mapIndexed { index, distro ->
+        when (index) {
+            0 -> distro.copy(
+                installStatus = LinuxInstallStatus.Installed,
+                downloadProgress = 1f,
+            )
+            1 -> distro.copy(
+                installStatus = LinuxInstallStatus.Downloading,
+                downloadProgress = 0.42f,
+            )
+            else -> distro
+        }
+    }
+
 @Preview(name = "Local Linux phone", showBackground = true, widthDp = 390, heightDp = 844)
 @Composable
 private fun LocalLinuxPhonePreview() {
     LiTermTheme {
-        LocalLinuxScreen()
+        LocalLinuxScreenContent(
+            distros = previewDistros(),
+            onDownload = {},
+            onStart = {},
+        )
     }
 }
 
@@ -396,6 +462,10 @@ private fun LocalLinuxPhonePreview() {
 @Composable
 private fun LocalLinuxTabletPreview() {
     LiTermTheme {
-        LocalLinuxScreen()
+        LocalLinuxScreenContent(
+            distros = previewDistros(),
+            onDownload = {},
+            onStart = {},
+        )
     }
 }

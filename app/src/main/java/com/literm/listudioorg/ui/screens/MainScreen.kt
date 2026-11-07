@@ -17,7 +17,6 @@
 package com.literm.listudioorg.ui.screens
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -30,7 +29,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material.icons.outlined.Code
@@ -50,11 +48,11 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -63,9 +61,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.literm.listudioorg.R
+import com.literm.listudioorg.data.local.Host
 import com.literm.listudioorg.ui.components.BrandMark
 import com.literm.listudioorg.ui.theme.LiTermTheme
+import com.literm.listudioorg.ui.viewmodel.HostViewModel
 
 private enum class MainDestination(
     @StringRes val labelRes: Int,
@@ -80,7 +82,51 @@ private enum class MainDestination(
 }
 
 @Composable
-fun MainScreen(modifier: Modifier = Modifier) {
+fun MainScreen(
+    modifier: Modifier = Modifier,
+    hostViewModel: HostViewModel = viewModel(factory = HostViewModel.Factory),
+) {
+    val hosts by hostViewModel.hosts.collectAsStateWithLifecycle()
+    var activeHost by remember { mutableStateOf<Host?>(null) }
+    var activeLocalLinux by remember { mutableStateOf<String?>(null) }
+
+    val currentHost = activeHost
+    val currentLocalLinux = activeLocalLinux
+    when {
+        currentLocalLinux != null -> {
+            LocalTerminalScreen(
+                distroId = currentLocalLinux,
+                onBack = { activeLocalLinux = null },
+                modifier = modifier,
+            )
+        }
+        currentHost != null -> {
+            TerminalScreen(
+                host = currentHost,
+                onBack = { activeHost = null },
+                modifier = modifier,
+            )
+        }
+        else -> {
+            MainScreenContent(
+                hosts = hosts,
+                onAddHost = hostViewModel::addHost,
+                onHostClick = { activeHost = it },
+                onStartLocalLinux = { distroId -> activeLocalLinux = distroId },
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun MainScreenContent(
+    hosts: List<Host>,
+    onAddHost: (Host) -> Unit,
+    onHostClick: (Host) -> Unit,
+    onStartLocalLinux: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     var selectedDestination by rememberSaveable { mutableStateOf(MainDestination.Hosts) }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -121,6 +167,10 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 ) {
                     DestinationContent(
                         destination = selectedDestination,
+                        hosts = hosts,
+                        onAddHost = onAddHost,
+                        onHostClick = onHostClick,
+                        onStartLocalLinux = onStartLocalLinux,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -132,11 +182,23 @@ fun MainScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun DestinationContent(
     destination: MainDestination,
+    hosts: List<Host>,
+    onAddHost: (Host) -> Unit,
+    onHostClick: (Host) -> Unit,
+    onStartLocalLinux: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (destination) {
-        MainDestination.Hosts -> HostListScreen(modifier = modifier)
-        MainDestination.LocalLinux -> LocalLinuxScreen(modifier = modifier)
+        MainDestination.Hosts -> HostListScreen(
+            hosts = hosts,
+            onAddHost = onAddHost,
+            onHostClick = onHostClick,
+            modifier = modifier,
+        )
+        MainDestination.LocalLinux -> LocalLinuxScreen(
+            onStartLocalLinux = onStartLocalLinux,
+            modifier = modifier,
+        )
         MainDestination.Keychain,
         MainDestination.Snippets,
         MainDestination.Logs,
@@ -272,7 +334,12 @@ private fun MainBottomBar(
 @Composable
 private fun MainScreenPhonePreview() {
     LiTermTheme {
-        MainScreen()
+        MainScreenContent(
+            hosts = emptyList(),
+            onAddHost = {},
+            onHostClick = {},
+            onStartLocalLinux = {},
+        )
     }
 }
 
@@ -280,6 +347,11 @@ private fun MainScreenPhonePreview() {
 @Composable
 private fun MainScreenTabletPreview() {
     LiTermTheme {
-        MainScreen()
+        MainScreenContent(
+            hosts = emptyList(),
+            onAddHost = {},
+            onHostClick = {},
+            onStartLocalLinux = {},
+        )
     }
 }
