@@ -24,12 +24,64 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build release APK
-        run: ./gradlew assembleRelease
+      - name: Build release APK (with log capture)
+        id: build
+        shell: bash
+        run: |
+          set +e
+          set -x
+          ./gradlew assembleRelease --stacktrace --info 2>&1 | tee build_log.txt
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            echo "::group::assembleRelease errors (grep)"
+            grep -n "e: \|FAILURE:\|Task .* FAILED\|> Task\|BUILD FAILED\|What went wrong\|Execution failed\|Unresolved reference\|Could not resolve\|Compilation error\|A problem occurred" build_log.txt | head -n 200 || true
+            echo "::endgroup::"
+            echo "::group::assembleRelease failure (tail 600)"
+            tail -n 600 build_log.txt || true
+            echo "::endgroup::"
+            # Emit key error lines as workflow annotations so they are visible via API check-run annotations.
+            python3 - <<'PY' || true
+          import re, pathlib
+          p = pathlib.Path('build_log.txt')
+          if not p.exists(): raise SystemExit
+          text = p.read_text(errors='ignore').splitlines()
+          keys = []
+          pat = re.compile(r'(e:\s+file:|FAILURE:|BUILD FAILED|What went wrong:|Execution failed for task|Unresolved reference|Could not (resolve|find)|Task .* FAILED)')
+          for i,l in enumerate(text):
+              if pat.search(l):
+                  for j in range(max(0,i-1), min(len(text), i+4)):
+                      keys.append(text[j])
+          # de-dup preserving order, cap
+          seen=set(); out=[]
+          for l in keys:
+              if l not in seen:
+                  seen.add(l); out.append(l)
+          for l in out[:60]:
+              l=l.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print(f"::error title=build::{l[:300]}")
+          PY
+          fi
+          exit 0
 
       - name: Upload release APKs
+        if: steps.build.outputs.status == '0'
         uses: actions/upload-artifact@v4
         with:
           name: literm-release-apks
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build_log.txt
+          if-no-files-found: warn
+
+      - name: Fail if build failed
+        if: steps.build.outputs.status != '0'
+        run: |
+          echo "assembleRelease failed with status ${{ steps.build.outputs.status }}"
+          exit 1

@@ -90,6 +90,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
     implementation("androidx.activity:activity-compose:1.11.0")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
