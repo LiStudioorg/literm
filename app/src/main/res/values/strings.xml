@@ -175,8 +175,7 @@
     <string name="settings_shortcuts_description">Show a draggable ball with Ctrl, Esc, Tab and arrow keys over the terminal.</string>
     <string name="settings_shortcuts_permission">LiTerm needs the \"Display over other apps\" permission to show the floating ball.</string>
     <string name="settings_shortcuts_unavailable">This device does not allow drawing over other apps</string>
-</resources>
-    <!-- 主机编辑/删除 -->
+<!-- 主机编辑/删除 -->
     <string name="edit_host_title">Edit Host</string>
     <string name="host_menu_edit">Edit</string>
     <string name="host_menu_delete">Delete</string>
@@ -194,3 +193,4 @@
     <string name="snippet_edit_title">Edit Snippet</string>
     <string name="snippet_menu_edit">Edit</string>
     <string name="snippet_menu_delete">Delete</string>
+</resources>

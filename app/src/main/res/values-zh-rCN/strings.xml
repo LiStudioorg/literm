@@ -175,8 +175,7 @@
     <string name="settings_shortcuts_description">在终端上方显示可拖动悬浮球，提供 Ctrl、Esc、Tab 与方向键。</string>
     <string name="settings_shortcuts_permission">需要授予「显示在其他应用上层」权限，悬浮球才能出现。</string>
     <string name="settings_shortcuts_unavailable">当前系统不允许显示在其他应用上层</string>
-</resources>
-    <!-- 主机编辑/删除 -->
+<!-- 主机编辑/删除 -->
     <string name="edit_host_title">编辑主机</string>
     <string name="host_menu_edit">编辑</string>
     <string name="host_menu_delete">删除</string>
@@ -194,3 +193,4 @@
     <string name="snippet_edit_title">编辑片段</string>
     <string name="snippet_menu_edit">编辑</string>
     <string name="snippet_menu_delete">删除</string>
+</resources>
