@@ -47,8 +47,4 @@ class SnippetRepository(
     suspend fun deleteSnippet(snippet: SnippetEntity) = withContext(Dispatchers.IO) {
         snippetDao.delete(snippet)
     }
-
-    suspend fun deleteSnippet(id: Long) = withContext(Dispatchers.IO) {
-        snippetDao.deleteById(id)
-    }
 }

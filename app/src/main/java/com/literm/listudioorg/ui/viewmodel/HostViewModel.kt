@@ -60,12 +60,6 @@ class HostViewModel(
         }
     }
 
-    fun deleteHost(id: Long) {
-        viewModelScope.launch {
-            repository.deleteHost(id)
-        }
-    }
-
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {

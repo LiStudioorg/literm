@@ -47,8 +47,4 @@ class KeyRepository(
     suspend fun deleteKey(key: KeyEntity) = withContext(Dispatchers.IO) {
         keyDao.delete(key)
     }
-
-    suspend fun deleteKey(id: Long) = withContext(Dispatchers.IO) {
-        keyDao.deleteById(id)
-    }
 }

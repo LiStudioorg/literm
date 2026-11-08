@@ -49,8 +49,4 @@ class HostRepository(
     suspend fun deleteHost(host: Host) = withContext(Dispatchers.IO) {
         hostDao.delete(host)
     }
-
-    suspend fun deleteHost(id: Long) = withContext(Dispatchers.IO) {
-        hostDao.deleteById(id)
-    }
 }
