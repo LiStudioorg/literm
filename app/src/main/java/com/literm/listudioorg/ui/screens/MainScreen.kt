@@ -121,6 +121,8 @@ fun MainScreen(
                 hosts = hosts,
                 availableKeys = keys,
                 onAddHost = hostViewModel::addHost,
+                onUpdateHost = hostViewModel::updateHost,
+                onDeleteHost = hostViewModel::deleteHost,
                 onHostClick = { activeHost = it },
                 onStartLocalLinux = { distroId -> activeLocalLinux = distroId },
                 modifier = modifier,
@@ -181,8 +183,8 @@ internal fun MainScreenContent(
                         hosts = hosts,
                         availableKeys = availableKeys,
                         onAddHost = onAddHost,
-                        onUpdateHost = hostViewModel::updateHost,
-                        onDeleteHost = hostViewModel::deleteHost,
+                        onUpdateHost = onUpdateHost,
+                        onDeleteHost = onDeleteHost,
                         onHostClick = onHostClick,
                         onStartLocalLinux = onStartLocalLinux,
                         modifier = Modifier.fillMaxSize(),
@@ -355,6 +357,8 @@ private fun MainScreenPhonePreview() {
         MainScreenContent(
             hosts = emptyList(),
             onAddHost = {},
+            onUpdateHost = {},
+            onDeleteHost = {},
             onHostClick = {},
             onStartLocalLinux = {},
         )
@@ -368,6 +372,8 @@ private fun MainScreenTabletPreview() {
         MainScreenContent(
             hosts = emptyList(),
             onAddHost = {},
+            onUpdateHost = {},
+            onDeleteHost = {},
             onHostClick = {},
             onStartLocalLinux = {},
         )
