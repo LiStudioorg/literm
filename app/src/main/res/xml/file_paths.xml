@@ -3,4 +3,11 @@
     <files-path
         name="logs"
         path="logs/" />
+    <cache-path
+        name="cache"
+        path="." />
+    <!-- 公共 Download 目录中的更新包（DownloadManager setDestinationInExternalPublicDir）。 -->
+    <external-path
+        name="external_downloads"
+        path="Download/" />
 </paths>

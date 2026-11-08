@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -66,7 +68,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.literm.listudioorg.R
 import com.literm.listudioorg.data.local.Host
 import com.literm.listudioorg.data.local.KeyEntity
+import com.literm.listudioorg.logic.update.ApkDownloader
+import com.literm.listudioorg.logic.update.ReleaseInfo
+import com.literm.listudioorg.logic.update.UpdateManager
+import com.literm.listudioorg.logic.update.UpdatePrefs
 import com.literm.listudioorg.ui.components.BrandMark
+import com.literm.listudioorg.ui.components.UpdateDialog
 import com.literm.listudioorg.ui.theme.LiTermTheme
 import com.literm.listudioorg.ui.viewmodel.HostViewModel
 import com.literm.listudioorg.ui.viewmodel.KeyViewModel
@@ -99,6 +106,19 @@ fun MainScreen(
     var activeHost by remember { mutableStateOf<Host?>(null) }
     var activeLocalLinux by remember { mutableStateOf<String?>(null) }
 
+    // 启动时静默检查一次更新，发现新版本弹出更新对话框。
+    val appContext = LocalContext.current
+    var updateRelease by remember { mutableStateOf<ReleaseInfo?>(null) }
+    var updateCurrentVersion by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        val result = UpdateManager.checkForUpdate()
+        if (result is UpdateManager.CheckResult.UpdateAvailable) {
+            updateCurrentVersion = result.currentVersion
+            updateRelease = result.release
+        }
+        // 静默检查：UpToDate / Error 不打扰用户。
+    }
+
     val currentHost = activeHost
     val currentLocalLinux = activeLocalLinux
     when {
@@ -129,12 +149,39 @@ fun MainScreen(
             )
         }
     }
+
+    // 更新弹窗：强制更新时无法关闭；下载走 UpdatePrefs 里配置的加速源。
+    updateRelease?.let { release ->
+        UpdateDialog(
+            release = release,
+            currentVersion = updateCurrentVersion,
+            onUpdate = {
+                val apkUrl = release.apkUrl
+                if (apkUrl.isNullOrBlank()) {
+                    android.widget.Toast
+                        .makeText(appContext, R.string.update_no_apk_link, android.widget.Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    val finalUrl = UpdatePrefs.resolveDownloadUrl(appContext, apkUrl)
+                    ApkDownloader.startDownload(
+                        context = appContext,
+                        apkUrl = finalUrl,
+                        fileName = "LiTerm-${release.versionNameNormalized}.apk",
+                    )
+                    if (!release.isForceUpdate) updateRelease = null
+                }
+            },
+            onDismiss = { updateRelease = null },
+        )
+    }
 }
 
 @Composable
 internal fun MainScreenContent(
     hosts: List<Host>,
     onAddHost: (Host) -> Unit,
+    onUpdateHost: (Host) -> Unit,
+    onDeleteHost: (Host) -> Unit,
     onHostClick: (Host) -> Unit,
     onStartLocalLinux: (String) -> Unit,
     modifier: Modifier = Modifier,

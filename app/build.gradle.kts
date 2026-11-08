@@ -26,6 +26,19 @@ android {
     namespace = "com.literm.listudioorg"
     compileSdk = 36
 
+    // Release 签名：完全从环境变量读取，本地无 keystore 时自动回退为未签名构建。
+    val releaseKeystore = file(System.getenv("KEYSTORE_FILE") ?: "release.keystore")
+    val releaseSigningConfig = if (releaseKeystore.isFile) {
+        signingConfigs.create("release") {
+            storeFile = releaseKeystore
+            storePassword = System.getenv("KEYSTORE_PASSWORD").orEmpty()
+            keyAlias = System.getenv("KEY_ALIAS").orEmpty()
+            keyPassword = System.getenv("KEY_PASSWORD").orEmpty()
+        }
+    } else {
+        null
+    }
+
     defaultConfig {
         applicationId = "com.literm.listudioorg"
         minSdk = 24
@@ -38,10 +51,14 @@ android {
             useSupportLibrary = true
         }
 
+        // 单一 Universal APK：不做 ABI 拆分，只在包内保留这两种 ABI 的 so。
         ndk {
-            abiFilters += listOf("arm64-v8a", "x86_64")
+            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
         }
     }
+
+    // 单一 Universal APK：本项目从未启用 splits { abi { ... } }，因此不会按 ABI 拆分产物，
+    // 只会输出一个 app-release.apk（内含上面 abiFilters 指定的两种 ABI）。
 
     buildTypes {
         release {
@@ -50,6 +67,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = releaseSigningConfig ?: signingConfigs.getByName("debug")
         }
     }
 
@@ -60,6 +78,8 @@ android {
 
     buildFeatures {
         compose = true
+        // UpdateManager 需要 BuildConfig.VERSION_NAME 做版本比较。
+        buildConfig = true
     }
 
     packaging {

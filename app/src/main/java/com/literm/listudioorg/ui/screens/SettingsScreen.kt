@@ -54,6 +54,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.literm.listudioorg.R
 import com.literm.listudioorg.logic.FloatingShortcutsPrefs
 import com.literm.listudioorg.service.FloatWindowService
+import com.literm.listudioorg.ui.components.LocalInstallSection
+import com.literm.listudioorg.ui.components.UpdateCheckSection
 
 /**
  * 设置页：目前只有“悬浮球快捷键”开关。
@@ -204,5 +206,11 @@ fun SettingsScreen(
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
         }
+
+        // 更新模块：手动检查更新 + 本地 APK 安装兜底。
+        Spacer(Modifier.height(20.dp))
+        UpdateCheckSection()
+        Spacer(Modifier.height(12.dp))
+        LocalInstallSection()
     }
 }
