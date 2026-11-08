@@ -43,6 +43,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -98,6 +100,7 @@ fun KeychainScreen(
     KeychainScreenContent(
         keys = keys,
         onAddKey = keyViewModel::addKey,
+        onUpdateKey = keyViewModel::updateKey,
         onDeleteKey = keyViewModel::deleteKey,
         modifier = modifier,
     )
@@ -109,9 +112,11 @@ internal fun KeychainScreenContent(
     onAddKey: (name: String, privateKey: String) -> Unit,
     onDeleteKey: (KeyEntity) -> Unit,
     modifier: Modifier = Modifier,
+    onUpdateKey: (KeyEntity) -> Unit = {},
 ) {
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var viewedKey by remember { mutableStateOf<KeyEntity?>(null) }
+    var editingKey by remember { mutableStateOf<KeyEntity?>(null) }
     var pendingDelete by remember { mutableStateOf<KeyEntity?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -159,7 +164,8 @@ internal fun KeychainScreenContent(
                     KeyCard(
                         key = key,
                         onClick = { viewedKey = key },
-                        onLongClick = { pendingDelete = key },
+                        onEdit = { editingKey = key },
+                        onDelete = { pendingDelete = key },
                     )
                 }
 
@@ -188,6 +194,17 @@ internal fun KeychainScreenContent(
             onSave = { name, privateKey ->
                 onAddKey(name, privateKey)
                 showAddDialog = false
+            },
+        )
+    }
+
+    editingKey?.let { key ->
+        KeyEditorDialog(
+            initialKey = key,
+            onDismiss = { editingKey = null },
+            onSave = { name, privateKey ->
+                onUpdateKey(key.copy(name = name, privateKey = privateKey))
+                editingKey = null
             },
         )
     }
@@ -223,98 +240,124 @@ internal fun KeychainScreenContent(
     }
 }
 
-/** 单个密钥卡片：点击查看详情，长按删除。 */
+/** 单个密钥卡片：点击查看详情，长按弹出编辑/删除菜单。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun KeyCard(
     key: KeyEntity,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
-        ),
-    ) {
-        Row(
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { showMenu = true },
+                ),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            ),
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF3F51B5),
-                                Color(0xFF3F51B5).copy(alpha = 0.72f),
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF3F51B5),
+                                    Color(0xFF3F51B5).copy(alpha = 0.72f),
+                                ),
                             ),
                         ),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Key,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
-                )
-            }
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Key,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
 
-            Spacer(Modifier.width(14.dp))
+                Spacer(Modifier.width(14.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = key.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = key.keyTypeLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    text = key.previewLine,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = key.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = key.keyTypeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = key.previewLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.key_menu_edit)) },
+                onClick = {
+                    showMenu = false
+                    onEdit()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.key_menu_delete)) },
+                onClick = {
+                    showMenu = false
+                    onDelete()
+                },
+            )
         }
     }
 }
 
-/** 新增密钥弹窗：输入名称与私钥明文。 */
+/** 新增 / 编辑密钥弹窗：输入名称与私钥明文。 */
 @Composable
 private fun KeyEditorDialog(
     onDismiss: () -> Unit,
     onSave: (name: String, privateKey: String) -> Unit,
+    initialKey: KeyEntity? = null,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var privateKey by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf(initialKey?.name.orEmpty()) }
+    var privateKey by rememberSaveable { mutableStateOf(initialKey?.privateKey.orEmpty()) }
     var attemptedSave by remember { mutableStateOf(false) }
 
     val nameValid = name.isNotBlank()
@@ -340,7 +383,9 @@ private fun KeyEditorDialog(
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
-                        text = stringResource(R.string.key_new_title),
+                        text = stringResource(
+                            if (initialKey == null) R.string.key_new_title else R.string.key_edit_title,
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -550,6 +595,7 @@ private fun KeychainPhonePreview() {
         KeychainScreenContent(
             keys = PreviewKeys,
             onAddKey = { _, _ -> },
+            onUpdateKey = {},
             onDeleteKey = {},
         )
     }
@@ -562,6 +608,7 @@ private fun KeychainEmptyPreview() {
         KeychainScreenContent(
             keys = emptyList(),
             onAddKey = { _, _ -> },
+            onUpdateKey = {},
             onDeleteKey = {},
         )
     }

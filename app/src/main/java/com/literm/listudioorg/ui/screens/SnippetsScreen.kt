@@ -48,6 +48,8 @@ import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +104,7 @@ fun SnippetsScreen(
     SnippetsScreenContent(
         snippets = snippets,
         onAddSnippet = snippetViewModel::addSnippet,
+        onUpdateSnippet = snippetViewModel::updateSnippet,
         onDeleteSnippet = snippetViewModel::deleteSnippet,
         onCopyCommand = { snippet ->
             copyCommandToClipboard(context, snippet)
@@ -117,8 +120,10 @@ internal fun SnippetsScreenContent(
     onDeleteSnippet: (SnippetEntity) -> Unit,
     onCopyCommand: (SnippetEntity) -> Unit,
     modifier: Modifier = Modifier,
+    onUpdateSnippet: (SnippetEntity) -> Unit = {},
 ) {
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var editingSnippet by remember { mutableStateOf<SnippetEntity?>(null) }
     var pendingDelete by remember { mutableStateOf<SnippetEntity?>(null) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -166,7 +171,8 @@ internal fun SnippetsScreenContent(
                     SnippetCard(
                         snippet = snippet,
                         onClick = { onCopyCommand(snippet) },
-                        onLongClick = { pendingDelete = snippet },
+                        onEdit = { editingSnippet = snippet },
+                        onDelete = { pendingDelete = snippet },
                     )
                 }
 
@@ -199,6 +205,17 @@ internal fun SnippetsScreenContent(
         )
     }
 
+    editingSnippet?.let { snippet ->
+        SnippetEditorDialog(
+            initialSnippet = snippet,
+            onDismiss = { editingSnippet = null },
+            onSave = { name, command ->
+                onUpdateSnippet(snippet.copy(name = name, command = command))
+                editingSnippet = null
+            },
+        )
+    }
+
     pendingDelete?.let { snippet ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
@@ -223,99 +240,125 @@ internal fun SnippetsScreenContent(
     }
 }
 
-/** 单个片段卡片：点击复制命令，长按删除。 */
+/** 单个片段卡片：点击复制命令，长按弹出编辑/删除菜单。 */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SnippetCard(
     snippet: SnippetEntity,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
-        ),
-    ) {
-        Row(
+    var showMenu by remember { mutableStateOf(false) }
+    Box {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { showMenu = true },
+                ),
+            shape = RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+            ),
         ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(50.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF00897B),
-                                Color(0xFF00897B).copy(alpha = 0.72f),
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF00897B),
+                                    Color(0xFF00897B).copy(alpha = 0.72f),
+                                ),
                             ),
                         ),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Terminal,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+
+                Spacer(Modifier.width(14.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = snippet.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = snippet.singleLineCommand,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
                 Icon(
-                    imageVector = Icons.Rounded.Terminal,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp),
+                    imageVector = Icons.Rounded.ContentCopy,
+                    contentDescription = stringResource(R.string.snippets_copy_hint),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.size(19.dp),
                 )
             }
+        }
 
-            Spacer(Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = snippet.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = snippet.singleLineCommand,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(Modifier.width(8.dp))
-
-            Icon(
-                imageVector = Icons.Rounded.ContentCopy,
-                contentDescription = stringResource(R.string.snippets_copy_hint),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.size(19.dp),
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.snippet_menu_edit)) },
+                onClick = {
+                    showMenu = false
+                    onEdit()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.snippet_menu_delete)) },
+                onClick = {
+                    showMenu = false
+                    onDelete()
+                },
             )
         }
     }
 }
 
-/** 新增片段弹窗：输入名称与命令内容。 */
+/** 新增 / 编辑片段弹窗：输入名称与命令内容。 */
 @Composable
 private fun SnippetEditorDialog(
     onDismiss: () -> Unit,
     onSave: (name: String, command: String) -> Unit,
+    initialSnippet: SnippetEntity? = null,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var command by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf(initialSnippet?.name.orEmpty()) }
+    var command by rememberSaveable { mutableStateOf(initialSnippet?.command.orEmpty()) }
     var attemptedSave by remember { mutableStateOf(false) }
 
     val nameValid = name.isNotBlank()
@@ -341,7 +384,9 @@ private fun SnippetEditorDialog(
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
-                        text = stringResource(R.string.snippet_new_title),
+                        text = stringResource(
+                            if (initialSnippet == null) R.string.snippet_new_title else R.string.snippet_edit_title,
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )

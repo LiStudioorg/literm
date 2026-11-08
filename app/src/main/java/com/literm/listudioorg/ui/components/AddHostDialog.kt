@@ -64,10 +64,12 @@ import com.literm.listudioorg.data.local.Host
 import com.literm.listudioorg.data.local.KeyEntity
 
 /**
- * 添加主机表单。
+ * 添加 / 编辑主机表单。
  *
  * 认证方式二选一：密码或密钥。选择密钥时从 Keychain（SQLite `ssh_keys` 表）中挑选，
  * 保存时把选中密钥的明文内容写入 [Host.privateKey]，连接逻辑无需改动。
+ *
+ * [initialHost] 非空时表示编辑模式：预填表单并在保存时保留原有 id。
  */
 @Composable
 fun AddHostDialog(
@@ -75,21 +77,32 @@ fun AddHostDialog(
     onSave: (Host) -> Unit,
     modifier: Modifier = Modifier,
     availableKeys: List<KeyEntity> = emptyList(),
+    initialHost: Host? = null,
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var ip by rememberSaveable { mutableStateOf("") }
-    var port by rememberSaveable { mutableStateOf("22") }
-    var username by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf(initialHost?.name.orEmpty()) }
+    var ip by rememberSaveable { mutableStateOf(initialHost?.ip.orEmpty()) }
+    var port by rememberSaveable { mutableStateOf((initialHost?.port ?: 22).toString()) }
+    var username by rememberSaveable { mutableStateOf(initialHost?.username.orEmpty()) }
+    var password by rememberSaveable { mutableStateOf(initialHost?.password.orEmpty()) }
     // 用布尔值保存认证方式：enum 无法直接进 rememberSaveable 的 Bundle。
-    var useKeyAuth by rememberSaveable { mutableStateOf(false) }
+    var useKeyAuth by rememberSaveable { mutableStateOf(!initialHost?.privateKey.isNullOrBlank()) }
     var selectedKeyId by rememberSaveable { mutableStateOf(0L) }
     var showKeyPicker by rememberSaveable { mutableStateOf(false) }
     var attemptedSave by remember { mutableStateOf(false) }
 
-    val selectedKey = remember(availableKeys, selectedKeyId) {
+    val selectedKey = remember(availableKeys, selectedKeyId, initialHost) {
         availableKeys.firstOrNull { key -> key.id == selectedKeyId }
+            ?: run {
+                // 编辑模式：原主机保存的是密钥明文，尝试按内容匹配回 Keychain 中的条目。
+                val saved = initialHost?.privateKey
+                if (saved.isNullOrBlank()) {
+                    null
+                } else {
+                    availableKeys.firstOrNull { key -> key.privateKey == saved }
+                }
+            }
     }
+
 
     val nameValid = name.isNotBlank()
     val ipValid = ip.isNotBlank()
@@ -122,7 +135,9 @@ fun AddHostDialog(
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
-                        text = stringResource(R.string.add_host_title),
+                        text = stringResource(
+                            if (initialHost == null) R.string.add_host_title else R.string.edit_host_title,
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -239,6 +254,8 @@ fun AddHostDialog(
                                 if (formValid) {
                                     onSave(
                                         Host(
+                                            // 编辑模式保留原有 id；新增时 id=0 交由 SQLite 自增。
+                                            id = initialHost?.id ?: 0L,
                                             name = name.trim(),
                                             ip = ip.trim(),
                                             port = portNumber ?: 22,

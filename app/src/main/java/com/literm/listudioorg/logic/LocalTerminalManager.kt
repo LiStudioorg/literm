@@ -127,8 +127,21 @@ class LocalTerminalManager : TerminalInputTarget {
 
                 AppLogger.log(TAG, "启动 PRoot：${command.joinToString(" ")}")
 
+                // Termux 构建的 proot 默认从硬编码的 Termux 路径查找 loader；
+                // 通过环境变量显式指向 jniLibs 中提取出的 loader，确保在本应用内可用。
+                val loader = File(nativeLibraryDir, "libproot_loader.so")
+                val loader32 = File(nativeLibraryDir, "libproot_loader32.so")
                 val newProcess = ProcessBuilder(command)
                     .directory(context.filesDir)
+                    .apply {
+                        val env = environment()
+                        if (loader.isFile) {
+                            env["PROOT_LOADER"] = loader.absolutePath
+                        }
+                        if (loader32.isFile) {
+                            env["PROOT_LOADER_32"] = loader32.absolutePath
+                        }
+                    }
                     .start()
                 process = newProcess
                 running = true

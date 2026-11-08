@@ -176,3 +176,21 @@
     <string name="settings_shortcuts_permission">需要授予「显示在其他应用上层」权限，悬浮球才能出现。</string>
     <string name="settings_shortcuts_unavailable">当前系统不允许显示在其他应用上层</string>
 </resources>
+    <!-- 主机编辑/删除 -->
+    <string name="edit_host_title">编辑主机</string>
+    <string name="host_menu_edit">编辑</string>
+    <string name="host_menu_delete">删除</string>
+    <string name="host_delete_title">删除主机</string>
+    <string name="host_delete_message">确定删除「%1$s」？此操作无法撤销。</string>
+    <string name="host_delete_confirm">删除</string>
+    <string name="host_delete_cancel">保留</string>
+
+    <!-- 密钥编辑 -->
+    <string name="key_edit_title">编辑密钥</string>
+    <string name="key_menu_edit">编辑</string>
+    <string name="key_menu_delete">删除</string>
+
+    <!-- 片段编辑 -->
+    <string name="snippet_edit_title">编辑片段</string>
+    <string name="snippet_menu_edit">编辑</string>
+    <string name="snippet_menu_delete">删除</string>

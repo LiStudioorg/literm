@@ -18,6 +18,7 @@ package com.literm.listudioorg.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -44,8 +45,11 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +57,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -62,7 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -121,6 +126,9 @@ private val PreviewHosts = listOf(
     ),
 )
 
+/**
+ * 主机列表页：展示 SQLite 中的已保存主机，支持搜索、新增、编辑、删除与连接。
+ */
 @Composable
 fun HostListScreen(
     hosts: List<Host>,
@@ -128,9 +136,13 @@ fun HostListScreen(
     onHostClick: (Host) -> Unit,
     modifier: Modifier = Modifier,
     availableKeys: List<KeyEntity> = emptyList(),
+    onUpdateHost: (Host) -> Unit = {},
+    onDeleteHost: (Host) -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var showAddHostDialog by rememberSaveable { mutableStateOf(false) }
+    var editingHost by remember { mutableStateOf<Host?>(null) }
+    var pendingDelete by remember { mutableStateOf<Host?>(null) }
     val filteredHosts = remember(hosts, query) {
         hosts.filter { host -> host.matches(query) }
     }
@@ -190,6 +202,8 @@ fun HostListScreen(
                         HostCard(
                             host = host,
                             onClick = { onHostClick(host) },
+                            onEdit = { editingHost = host },
+                            onDelete = { pendingDelete = host },
                         )
                     }
                 }
@@ -215,6 +229,41 @@ fun HostListScreen(
                 onSave = { host ->
                     onAddHost(host)
                     showAddHostDialog = false
+                },
+            )
+        }
+
+        editingHost?.let { host ->
+            AddHostDialog(
+                onDismissRequest = { editingHost = null },
+                availableKeys = availableKeys,
+                initialHost = host,
+                onSave = { updated ->
+                    onUpdateHost(updated)
+                    editingHost = null
+                },
+            )
+        }
+
+        pendingDelete?.let { host ->
+            AlertDialog(
+                onDismissRequest = { pendingDelete = null },
+                title = { Text(stringResource(R.string.host_delete_title)) },
+                text = { Text(stringResource(R.string.host_delete_message, host.name.ifBlank { host.ip })) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onDeleteHost(host)
+                            pendingDelete = null
+                        },
+                    ) {
+                        Text(stringResource(R.string.host_delete_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDelete = null }) {
+                        Text(stringResource(R.string.host_delete_cancel))
+                    }
                 },
             )
         }
@@ -301,16 +350,28 @@ private fun HostListHeader(
     }
 }
 
+/**
+ * 主机卡片：点击连接，长按弹出编辑/删除菜单。
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun HostCard(
     host: Host,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val accent = accentFor(host)
+    var showMenu by remember { mutableStateOf(false) }
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+    Box {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { showMenu = true },
+                ),
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -386,6 +447,27 @@ private fun HostCard(
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.size(20.dp),
+            )
+        }
+    }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.host_menu_edit)) },
+                onClick = {
+                    showMenu = false
+                    onEdit()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.host_menu_delete)) },
+                onClick = {
+                    showMenu = false
+                    onDelete()
+                },
             )
         }
     }
@@ -513,7 +595,13 @@ private fun Host.matches(query: String): Boolean {
 @Composable
 private fun HostListPhonePreview() {
     LiTermTheme {
-        HostListScreen(hosts = PreviewHosts, onAddHost = {}, onHostClick = {})
+        HostListScreen(
+            hosts = PreviewHosts,
+            onAddHost = {},
+            onUpdateHost = {},
+            onDeleteHost = {},
+            onHostClick = {},
+        )
     }
 }
 
@@ -521,7 +609,13 @@ private fun HostListPhonePreview() {
 @Composable
 private fun HostListTabletPreview() {
     LiTermTheme {
-        HostListScreen(hosts = PreviewHosts, onAddHost = {}, onHostClick = {})
+        HostListScreen(
+            hosts = PreviewHosts,
+            onAddHost = {},
+            onUpdateHost = {},
+            onDeleteHost = {},
+            onHostClick = {},
+        )
     }
 }
 
@@ -529,6 +623,12 @@ private fun HostListTabletPreview() {
 @Composable
 private fun HostListEmptyPreview() {
     LiTermTheme {
-        HostListScreen(hosts = emptyList(), onAddHost = {}, onHostClick = {})
+        HostListScreen(
+            hosts = emptyList(),
+            onAddHost = {},
+            onUpdateHost = {},
+            onDeleteHost = {},
+            onHostClick = {},
+        )
     }
 }
