@@ -34,6 +34,10 @@ android {
             storePassword = System.getenv("KEYSTORE_PASSWORD").orEmpty()
             keyAlias = System.getenv("KEY_ALIAS").orEmpty()
             keyPassword = System.getenv("KEY_PASSWORD").orEmpty()
+            // 显式指定签名方案：V2 + V3（V1 对 minSdk 24 的包已无必要）。
+            enableV1Signing = false
+            enableV2Signing = true
+            enableV3Signing = true
         }
     } else {
         null
